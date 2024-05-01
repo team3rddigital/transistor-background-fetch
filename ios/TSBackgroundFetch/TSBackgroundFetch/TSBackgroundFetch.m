@@ -98,10 +98,17 @@ static NSString *const PERMITTED_IDENTIFIERS_KEY    = @"BGTaskSchedulerPermitted
     if (@available (iOS 13.0, *)) {
         if ([TSBGAppRefreshSubscriber useTaskScheduler]) {
             BGTaskScheduler *scheduler = [BGTaskScheduler sharedScheduler];
-            BGAppRefreshTaskRequest *request = [[BGAppRefreshTaskRequest alloc] initWithIdentifier:BACKGROUND_REFRESH_TASK_ID];
-            request.earliestBeginDate = [NSDate dateWithTimeIntervalSinceNow:minimumFetchInterval];
-            
-            [scheduler submitTaskRequest:request error:&error];
+            if (@available(iOS 17.0, *)) {
+                BGHealthResearchTaskRequest *request = [[BGHealthResearchTaskRequest alloc] initWithIdentifier:BACKGROUND_REFRESH_TASK_ID];
+                request.earliestBeginDate = [NSDate dateWithTimeIntervalSinceNow:minimumFetchInterval];
+                [scheduler submitTaskRequest:request error:&error];
+            } else {
+                // Fallback on earlier versions
+                BGAppRefreshTaskRequest *request = [[BGAppRefreshTaskRequest alloc] initWithIdentifier:BACKGROUND_REFRESH_TASK_ID];
+                request.earliestBeginDate = [NSDate dateWithTimeIntervalSinceNow:minimumFetchInterval];
+                
+                [scheduler submitTaskRequest:request error:&error];
+            }
             // Handle case for Simulator where BGTaskScheduler doesn't work.
             if ((error != nil) && (error.code == BGTaskSchedulerErrorCodeUnavailable)) {
                 NSLog(@"[%@] BGTaskScheduler failed to register fetch-task and will fall-back to old API.  This is likely due to running in the iOS Simulator (%@)", TAG, error);
